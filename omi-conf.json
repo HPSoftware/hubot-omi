@@ -4,5 +4,6 @@
    "OMiHost":  "your.omi.server",
    "OMiPort":   80,
    "OMiContextRoot":  "",
-   "OMiProtocol": "http"
+   "OMiProtocol": "http",
+   "ServiceManagerName": "Service_Manager"
 }

@@ -14,24 +14,51 @@ module.exports = function(OMiBot) {
 
 
   /* ------------ CONFIGURATION ------------ */
-  console.log("OMiHost:", config.OMiHost);
   var OMiLogin       = config.OMiLogin,
       OMiPassword    = config.OMiPassword,
       OMiHost        = config.OMiHost,
       OMiPort        = config.OMiPort,
       OMiContextRoot = config.OMiContextRoot,
-      OMiProtocol    = config.OMiProtocol;
+      OMiProtocol    = config.OMiProtocol,
+      ServiceManagerName = config.ServiceManagerName;
 
   /* ------------ GLOBALS ------------ */
   var omiCookies        = '',
       secureModifyToken = '',
-      http              = Http;
+      http              = Http,
+      lastEventID       = '';
 
 
   /* ------------ CHAT HANDLERS IMPLEMENTATION ------------ */
-  var chatHandlerHug = function(res) {
-    return res.send("Come here and get a free hug!");
-  }; // end: chatHandlerHug
+
+  var chatHandlerEscal = function(res) {
+    var eventID = res.match[1];
+
+    if (eventID == null || eventID == "") {
+      console.log('No eventID'+ JSON.stringify(res.match + " .. use last EventID " + lastEventID));
+      eventID = lastEventID;
+    } else {
+      console.log('ID:'+ JSON.stringify(res.match));
+    }
+    var body = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
+        <event xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" \
+        xmlns="http://www.hp.com/2009/software/opr/data_model" relationships_included="true" \
+        type="urn:x-hp:2009:software:data_model:opr:type:event" version="1.3"> \
+        <control_transferred_to type="urn:x-hp:2009:software:data_model:opr:type:control_transfer_info" version="1.2">\
+          <name>' +  ServiceManagerName +  '</name>\
+        </control_transferred_to>\
+        </event>';
+
+    OMiRestCall(
+      {path: '/opr-web/rest/event_list/'+eventID, method: 'PUT', body: body}, function(err, result) {
+        if (err) {
+          console.log('Could not esaclate event ' + eventID);
+        } else {
+          res.reply("Event escalated to " + ServiceManagerName);
+        }
+      }
+    );
+  }; // end: chatHandlerEscal
 
 
   /* ------------ HTTP SERVER ROUTERS IMPLEMENTATION ------------ */
@@ -39,11 +66,20 @@ module.exports = function(OMiBot) {
     parseString(
       req.rawBody, function(err, event) {
   	    // console.log(event);
+
+        // Save the event ID for further commands
+        event = event.event;
+        if (event.id != undefined && event.id != null)
+        {
+          lastEventID = event.id[0];
+          console.log('Last Event ID: '+ lastEventID);
+        }
+
         var room   = req.params.channel;
         console.log("room: " + room);
         var result = '';
         var color, fallback, fields, room, title;
-        event = event.event;
+
         color = "#808080";
         switch (event.severity[0]) {
           case 'unknown':
@@ -209,17 +245,22 @@ module.exports = function(OMiBot) {
   } // end: OMiAuthenticate
 
   function OMiRestCall(options, callback) {
+
     var requestOptions = {
           host: OMiHost,
           port: OMiPort,
           path: OMiContextRoot + options.path,
           method: options.method,
           headers: {
-            Cookie: omiCookies,
+          Cookie: omiCookies,
             'X-Secure-Modify-Token': secureModifyToken
           }
-        },
-        result         = '',
+        };
+    if (options.body && options.method !== 'GET') {
+      requestOptions.headers['Content-Type'] = 'text/xml';
+      requestOptions.headers['Content-Length'] =  Buffer.byteLength(options.body);
+    }
+    var  result         = '',
         request        = http.request(
           requestOptions, function(res) {
 
@@ -294,7 +335,8 @@ module.exports = function(OMiBot) {
   }
 
   /* ------------ CHAT HANDLERS ------------ */
-  OMiBot.hear(/hug/i, chatHandlerHug);
+
+  OMiBot.respond(/omi\s+escalate\s+event\s*(\S*)/i, chatHandlerEscal);
 
   /* ------------ HTTP SERVER ROUTERS ------------ */
   OMiBot.router.post('/omibot/:channel/event', rawbody, eventHandler);
