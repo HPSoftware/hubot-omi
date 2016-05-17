@@ -38,97 +38,89 @@ module.exports = function(OMiBot) {
   var eventHandler = function eventHandler(req, res) {
     parseString(
       req.rawBody, function(err, event) {
-	    // console.log(event);
+  	    // console.log(event);
         var room   = req.params.channel;
         console.log("room: " + room);
         var result = '';
-		  var color, fallback, fields, room, title;
-		  event = event.event; 
-		  color = "#808080";
-		  switch (event.severity[0]) {
-						case 'unknown':
-						  color = "#808080";
-						  break;
-						case 'normal':
-						  color = "#00FF00";
-						  break;
-						case 'minor':
-						  color = "#FFFF00";
-						  break;
-						case 'warning':
-						  color = "#00ffff";
-						  break;
-						case 'major':
-						  color = "#ff9900";
-						  break;
-						case 'normal':
-						  color = "good";
-						  break;
-						case 'critical':
-						  color = "#FF0000";
-						  break;
-						default:
-						  color = "#808080";
-		  }
+        var color, fallback, fields, room, title;
+        event = event.event;
+        color = "#808080";
+        switch (event.severity[0]) {
+          case 'unknown':
+            color = "#808080"; break;
+          case 'normal':
+            color = "#00FF00"; break;
+          case 'minor':
+            color = "#FFFF00"; break;
+          case 'warning':
+            color = "#00ffff"; break;
+          case 'major':
+            color = "#ff9900"; break;
+          case 'normal':
+            color = "good"; break;
+          case 'critical':
+            color = "#FF0000"; break;
+          default:
+            color = "#808080";
+        }
 
-		var cat = "";
-		if (event.category != undefined && event.category != null)
-		{
-			cat = event.category[0];
-		} 
+        var cat = "";
+        if (event.category != undefined && event.category != null)
+        {
+          cat = event.category[0];
+        }
 
-		var node = "";
-		if (event.node_ref != undefined && event.node_ref != null &&
-								event.node_ref[0].node != undefined && event.node_ref[0].node != null &&
-								event.node_ref[0].node[0].display_label != undefined 
-											&& event.node_ref[0].node[0].display_label != null )
-		{
-			node = event.node_ref[0].node[0].display_label[0]
-		} 
+        var node = "";
+        if (event.node_ref != undefined && event.node_ref != null &&
+            event.node_ref[0].node != undefined && event.node_ref[0].node != null &&
+            event.node_ref[0].node[0].display_label != undefined
+        	  && event.node_ref[0].node[0].display_label != null )
+        {
+        	node = event.node_ref[0].node[0].display_label[0]
+        }
 
-		  fields = [
-						{
-						  title: 'Receive Time',
-						  value: event.time_received[0],
-						  short: true
-						}, {
-						  title: 'Node',
-						  value: node,
-						  short: true
-						}, {
-						  title: 'Category',
-						  value: cat,
-						  short: true
-						}, {
-						  title: 'Priority',
-						  value: event.priority[0],
-						  short: true
-						}
-		  ];
-		  fallback = event.severity[0] + " : " + node + " : " + event.title[0];
-		  title = "New " + event.severity[0] + " event on " + node;
-		  OMiBot.emit('slack-attachment', {
-						message: {
-						  room: room,
-						  username: 'omi'
-						},
-						content: {
-						  title: title,
-						  title_link: event.drilldown_url[0],
-						  text: event.title[0],
-						  color: color,
-						  pretext: '',
-						  fallback: fallback,
-						  fields: fields
-						}
-		  });
-		  
-		res.setHeader('content-type', 'application/xml');
+        fields = [
+          {
+            title: 'Receive Time',
+            value: event.time_received[0],
+            short: true
+          }, {
+            title: 'Node',
+            value: node,
+            short: true
+          }, {
+            title: 'Category',
+            value: cat,
+            short: true
+          }, {
+            title: 'Priority',
+            value: event.priority[0],
+            short: true
+          }
+        ];
+        fallback = event.severity[0] + " : " + node + " : " + event.title[0];
+        title = "New " + event.severity[0] + " event on " + node;
+        OMiBot.emit('slack-attachment', {
+          message: {
+            room: room,
+            username: 'omi'
+          },
+          content: {
+            title: title,
+            title_link: event.drilldown_url[0],
+            text: event.title[0],
+            color: color,
+            pretext: '',
+            fallback: fallback,
+            fields: fields
+          }
+        });
+
+        res.setHeader('content-type', 'application/xml');
         return res.send(req.rawBody); // Why to send that back?
-                
-                                
-     }                              
-    );
+
+      } // req.rawBody
+    );  // parseString
   }; // end: eventHandler
 
   var eventChangeHandler = function eventChangeHandler(req, res) {
