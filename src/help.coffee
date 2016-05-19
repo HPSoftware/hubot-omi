@@ -59,8 +59,11 @@ loadOMiSupportCommands = (robot) ->
 ########################################################################################
 
 getOMiHelpSupport = (robot,msg) ->
-  msgData =
-    channel: msg.message.room
-    text:'*Available OMi Commands*'
-    attachments:supportCommandsResult
-  robot.emit 'slack.attachment', msgData
+  if robot.adapterName is 'slack'
+    msgData =
+      channel: msg.message.room
+      text:'*Available OMiii Commands*'
+      attachments:supportCommandsResult
+    robot.emit 'slack.attachment', msgData
+  else
+    robot.reply "Sorry. No help for this adapter"
