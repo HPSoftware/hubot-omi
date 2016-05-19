@@ -26,38 +26,74 @@ module.exports = function(OMiBot) {
   var omiCookies        = '',
       secureModifyToken = '',
       http              = Http,
-      lastEventID       = '';
+      eventIDs          = [],  // cache for event IDs
+      maxIDs            = 100;
 
 
   /* ------------ CHAT HANDLERS IMPLEMENTATION ------------ */
 
   var chatHandlerEscal = function(res) {
     var eventID = res.match[1];
+    var foundIDs = [];
 
-    if (eventID == null || eventID == "") {
-      console.log('No eventID'+ JSON.stringify(res.match + " .. use last EventID " + lastEventID));
-      eventID = lastEventID;
-    } else {
-      console.log('ID:'+ JSON.stringify(res.match));
-    }
-    var body = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
-        <event xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" \
-        xmlns="http://www.hp.com/2009/software/opr/data_model" relationships_included="true" \
-        type="urn:x-hp:2009:software:data_model:opr:type:event" version="1.3"> \
-        <control_transferred_to type="urn:x-hp:2009:software:data_model:opr:type:control_transfer_info" version="1.2">\
-          <name>' +  ServiceManagerName +  '</name>\
-        </control_transferred_to>\
-        </event>';
-
-    OMiRestCall(
-      {path: '/opr-web/rest/event_list/'+eventID, method: 'PUT', body: body}, function(err, result) {
-        if (err) {
-          console.log('Could not esaclate event ' + eventID);
-        } else {
-          res.reply("Event escalated to " + ServiceManagerName);
+    // first check ii an ID was submitted, if not try to use last.
+    if (eventID == null || eventID == "")  { // No ID in command
+      if (eventIDs.length > 0) { // some ID in cache
+        OMiBot.logger.info('No eventID'+ JSON.stringify(res.match + " .. try use last EventID "));
+        eventID = eventIDs[eventIDs.length-1].id;
+      } else { // no ID is the cache .. too bad
+        OMiBot.logger.info('No eventID submitted '+ JSON.stringify(res.match + " .. and no last event "));
+        res.reply("No last event ID found. Please enter the full ID");
+      }
+    } else { // some 'short' ID, was submitted ... good.
+      OMiBot.logger.info('ID:'+ JSON.stringify(res.match));
+      foundIDs = [];
+      // Search for the right full ID
+      var index, len;
+      for (index = 0, len = eventIDs.length; index < len; ++index) {
+        if (eventIDs[index].id != undefined) {
+          if (eventID === eventIDs[index].id.substring(0,eventID.length)) {
+            OMiBot.logger.info("ID:" + index + " found " + eventIDs[index].id);
+            foundIDs.push(eventIDs[index].id);
+          }
         }
       }
-    );
+
+      if (foundIDs.length == 0  ) {
+        // OMiBot.logger.info("No full ID found for the short ID. Please try to use the full ID");
+        res.reply("No full ID found for the short ID. Please try to use the full ID");
+      } else if (foundIDs.length > 1 ) {
+        // OMiBot.logger.info("Duplicate long IDs found for the short ID. Please enter the full ID");
+        res.reply("Duplicate long IDs found for the short ID. Please enter the full ID");
+      } else {
+        OMiBot.logger.info("Found ID: " + foundIDs[0]);
+        eventID = foundIDs[0];
+      }
+    }
+
+    // Call the OMi REST WS for transfer control if thwere is a eventID
+    if (eventID != null && eventID != "") {
+      var body = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?> \
+          <event xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" \
+          xmlns="http://www.hp.com/2009/software/opr/data_model" relationships_included="true" \
+          type="urn:x-hp:2009:software:data_model:opr:type:event" version="1.3"> \
+          <control_transferred_to type="urn:x-hp:2009:software:data_model:opr:type:control_transfer_info" version="1.2">\
+            <name>' +  ServiceManagerName +  '</name>\
+          </control_transferred_to>\
+          </event>';
+
+      OMiRestCall(
+        {path: '/opr-web/rest/event_list/'+eventID, method: 'PUT', body: body}, function(err, result) {
+          if (err) {
+            res.reply('Could not esaclate event ' + eventID);
+          } else {
+            res.reply("Event escalated to " + ServiceManagerName);
+          }
+        }
+      );
+    } else {
+      OMiBot.logger.info("No valid ID found in cache");
+    }
   }; // end: chatHandlerEscal
 
 
@@ -65,18 +101,19 @@ module.exports = function(OMiBot) {
   var eventHandler = function eventHandler(req, res) {
     parseString(
       req.rawBody, function(err, event) {
-  	    // console.log(event);
-
+  	    // OMiBot.logger.info(event);
         // Save the event ID for further commands
         event = event.event;
         if (event.id != undefined && event.id != null)
         {
-          lastEventID = event.id[0];
-          console.log('Last Event ID: '+ lastEventID);
+          // Use an array because we might want to keep other attributes
+          eventIDs.push({ 'id': event.id[0] });
+          OMiBot.logger.info("Added event ID to chache" + event.id[0]);
+          if (eventIDs.length > maxIDs) eventIDs.shift();
         }
 
         var room   = req.params.channel;
-        console.log("room: " + room);
+        OMiBot.logger.info("room: " + room);
         var result = '';
         var color, fallback, fields, room, title;
 
@@ -131,6 +168,10 @@ module.exports = function(OMiBot) {
           }, {
             title: 'Priority',
             value: event.priority[0],
+            short: true
+          }, {
+            title: 'Short ID',
+            value: event.id[0].substring(0,4),
             short: true
           }
         ];
@@ -201,7 +242,7 @@ module.exports = function(OMiBot) {
             if (res.statusCode !== 200) {
               res.on(
                 'data', function(chunk) {
-                  console.log(
+                  OMiBot.logger.info(
                     'Error: unable to authenticate with OMi ' + OMiHost + ':' + OMiPort + '. Status: ' + res.statusCode + '. Server reply:' + chunk
                   );
                 }
@@ -235,7 +276,7 @@ module.exports = function(OMiBot) {
         );
     request.on(
       'error', function(error) {
-        console.log('Error: unable to authenticate with OMi ' + OMiHost + ':' + OMiPort + '. Message: ' + error);
+        OMiBot.logger.info('Error: unable to authenticate with OMi ' + OMiHost + ':' + OMiPort + '. Message: ' + error);
         if (callback instanceof Function) {
           return callback(true);
         }
@@ -299,7 +340,7 @@ module.exports = function(OMiBot) {
                 // error
                 res.on(
                   'data', function(chunk) {
-                    console.log(
+                    OMiBot.logger.info(
                       'Error: unable to send request to OMi ' + requestOptions.path, 'Status: ' + res.statusCode,
                       'Server reply:' + chunk, 'Body:' + options.body
                     );
@@ -314,7 +355,7 @@ module.exports = function(OMiBot) {
         );
     request.on(
       'error', function(error) {
-        console.log(
+        OMiBot.logger.info(
           'Error: unable to send request to OMi ' + requestOptions.path, 'Message: ' + error,
           'Body:' + options.body
         );
