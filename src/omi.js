@@ -10,7 +10,7 @@
  * Unless required by applicable law or agreed to in writing,
  * Software distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and limitations under the License. 
+ * See the License for the specific language governing permissions and limitations under the License.
  */
 
 
@@ -238,7 +238,286 @@ module.exports = function(OMiBot) {
     return res.send('OK');
   }; // end: eventConnectHandler
 
-  /* ------------ INIT ------------ */
+
+  var chatHandlerTool = function(res) {
+    var paramString = res.match[1].trim(),
+        params      = paramString.split(/\s+/);
+
+    if (params[0] === '' || params[0] === 'help' || params[0] === '?') {
+      res.send('super help')
+      return;
+    }
+
+    var nodeName = params[0].replace('http://', '').replace('https://', '');
+    var toolName = params[1];
+    var toolParameters = params.splice(0, 2);
+    OMiBot.logger.debug('MATCH:' + JSON.stringify(res.match));
+    res.send('Will execute tool on ' + nodeName);
+
+    function getConvertNodeToCiID() {
+      OMiRestCall(
+        {path: '/opr-config-server/rest/node?nodeNames=' + nodeName, method: 'GET'}, function(err, result) {
+          parseString(
+            result, {explicitArray: false}, function(err, response) {
+              OMiBot.logger.debug('NODES:' + JSON.stringify(response.list_nodes.nodes.node.id));
+              var testCiId = response.list_nodes.nodes.node.id;
+              // res.send('CI has following ID: ' + testCiId);
+              getTools({ciId: testCiId});
+            }
+          );
+
+        }
+      );
+    }
+
+    function getTools(options) {
+      var body = '<tool_query xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema">\                                                                                                                        \
+        <ci_ids>\
+        <ci_id>' + options.ciId + '</ci_id>\
+        </ci_ids>\
+      </tool_query>';
+      OMiRestCall(
+        {path: '/opr-web/rest/10.11/tool_execution/', method: 'POST', body: body}, function(err, result) {
+          /*
+           <tool_list xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+           <id>ce027607-8e8b-4a59-99f8-e84f57a70fcb</id>
+           <tools_for_ci>
+           <tool_ref>
+           <id>8f417085-260d-467f-b714-b88bc0196263</id>
+           <target_id>8f417085-260d-467f-b714-b88bc0196263</target_id>
+           <label>ping</label>
+           <description></description>
+           <tool_type>om_agent_command</tool_type>
+           <has_user_parameter>false</has_user_parameter>
+           <requires_run_as_user>false</requires_run_as_user>
+           <name>ping</name>
+           <ci_type>configuration_item</ci_type>
+           </tool_ref>
+           </tools_for_ci>
+           </tool_list>
+
+           NODES:{"tool_list":{"$":{"xmlns":"http://www.hp.com/2009/software/opr/data_model","xmlns:xs":"http://www.w3.org/2001/XMLSchema"},"id":"ce027607-8e8b-4
+           a59-99f8-e84f57a70fcb","tools_for_ci":{"tool_ref":{"id":"8f417085-260d-467f-b714-b88bc0196263","target_id":"8f417085-260d-467f-b714-b88bc0196263","lab
+           el":"ping","description":"","tool_type":"om_agent_command","has_user_parameter":"false","requires_run_as_user":"false","name":"ping","ci_type":"config
+           uration_item"}}}}
+
+           */
+          parseString(
+            result, {explicitArray: false}, function(err, response) {
+              if (!Array.isArray(response.tool_list.tools_for_ci.tool_ref)) {
+                response.tool_list.tools_for_ci.tool_ref = [response.tool_list.tools_for_ci.tool_ref];
+              }
+              var toolId, toolNames = [];
+
+              _.each(
+                response.tool_list.tools_for_ci.tool_ref, function(tool) {
+                  if (tool.label === toolName) {
+                    toolId = tool.id;
+                  }
+                  toolNames.push(tool.label);
+                }
+              );
+
+              if (!toolId) {
+                return res.send(
+                  'I\'m sorry, but it looks like "' + nodeName + '" has no tool called "' + toolName + '".\nAvailable tools are: ' + toolNames.join(
+                    '\n'
+                  )
+                );
+              }
+
+              //res.send('Found following: ' + response.tool_list.tools_for_ci.tool_ref[0].label);
+              prepare({ciId: options.ciId, toolId: toolId})
+            }
+          );
+        }
+      );
+    }
+
+    function prepare(options) {
+      var body = '<tool_preparation xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema">\ \
+         <tool_id>' + options.toolId + '</tool_id>\
+        <ci_ids>\
+        <ci_id>' + options.ciId + '</ci_id>\
+        </ci_ids>\
+        <ci_origin>ci</ci_origin>\
+      </tool_preparation>';
+      OMiRestCall(
+        {path: '/opr-web/rest/10.11/tool_execution/preparation', method: 'POST', body: body}, function(err, result) {
+          /*
+           BODY: <tool_execution_context xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XM
+           LSchema">
+           <id>ed80dbc8-feca-4130-8521-d504604d34e6</id>
+           <tool_ref>
+           <id>43ba90bc-eec6-43d1-9987-54b848c182be</id>
+           <target_id>43ba90bc-eec6-43d1-9987-54b848c182be</target_id>
+           <label>ping</label>
+           <description></description>
+           <tool_type>om_agent_command</tool_type>
+           <has_user_parameter>false</has_user_parameter>
+           <requires_run_as_user>false</requires_run_as_user>
+           <name>ping</name>
+           <ci_type>unix</ci_type>
+           </tool_ref>
+           <user_parameters/>
+           <tool_execution_result_ref>
+           <id>89dad455-90d4-40f2-b75c-9a17251489d4</id>
+           <execution_host>srv1.example.com</execution_host>
+           <tool_command>ping mambo8.mambo.net</tool_command>
+           <tool_execution_state>not_started</tool_execution_state>
+           </tool_execution_result_ref>
+           </tool_execution_context>
+           */
+          parseString(
+            result, {explicitArray: false}, function(err, response) {
+              OMiBot.logger.debug('CONTEXT:' + JSON.stringify(response));
+              var executionContextId = response.tool_execution_context.id,
+                  parameters         = [];
+              //res.send('Tool execution has the context id: ' + executionContextId);
+              if (response.tool_execution_context.has_user_parameter) {
+                if (!Array.isArray(response.tool_execution_context.user_parameters)) {
+                  response.tool_execution_context.user_parameters = [response.tool_execution_context.user_parameters];
+                }
+                parameters = response.tool_execution_context.user_parameters;
+              }
+              execute({executionContextId: executionContextId, parameters: parameters})
+            }
+          );
+
+        }
+      );
+    }
+
+    function execute(options) {
+      var body = '<tool_execution xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema"></tool_execution>';
+      options.method = options.method || 'POST';
+      OMiRestCall(
+        {
+          path: '/opr-web/rest/10.11/tool_execution/execution/' + options.executionContextId,
+          method: options.method,
+          body: body
+        }, function(err, result) {
+          /*
+           BODY: <tool_execution_context xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XM
+           LSchema">
+           <id>1a58b455-36b6-4649-ac94-d108938e193f</id>
+           <tool_ref>
+           <id>43ba90bc-eec6-43d1-9987-54b848c182be</id>
+           <target_id>43ba90bc-eec6-43d1-9987-54b848c182be</target_id>
+           <label>ping</label>
+           <description></description>
+           <tool_type>om_agent_command</tool_type>
+           <has_user_parameter>false</has_user_parameter>
+           <requires_run_as_user>false</requires_run_as_user>
+           <name>ping</name>
+           <ci_type>unix</ci_type>
+           </tool_ref>
+           <user_parameters/>
+           <run_as_username>$AGENT_USER</run_as_username>
+           <tool_execution_result_ref>
+           <id>8b106e9a-b445-4cb4-aa44-c0c6c55c45a1</id>
+           <execution_host>srv1.example.com</execution_host>
+           <tool_command>ping mambo8.mambo.net</tool_command>
+           <tool_execution_state>pending</tool_execution_state>
+           </tool_execution_result_ref>
+           </tool_execution_context>
+           */
+          parseString(
+            result, {explicitArray: false}, function(err, response) {
+              OMiBot.logger.debug('CONTEXT:' + JSON.stringify(response));
+              var state = response.tool_execution_context.tool_execution_result_ref.tool_execution_state;
+              //res.send('Execution state: ' + state);
+              switch (state) {
+                case 'pending':
+                case 'running':
+                  options.method = 'GET';
+                  setTimeout(
+                    function() {
+                      execute(options)
+                    }, 2000
+                  );
+                  break;
+                case 'finished':
+                case 'failed':
+                  return results(
+                    {
+                      executionContextId: options.executionContextId,
+                      resultId: response.tool_execution_context.tool_execution_result_ref.id
+                    }
+                  );
+                  break;
+                default:
+                  res.send(
+                    'Execution returned the status "' + state + '". I don\'t know how to handle it!'
+                  );
+                  break;
+              }
+            }
+          );
+
+        }
+      );
+    }
+
+    function results(options) {
+      OMiRestCall(
+        {
+          path: '/opr-web/rest/10.11/tool_execution/execution/' + options.executionContextId + '/' + options.resultId,
+          method: 'GET',
+        }, function(err, result) {
+          /*
+           <tool_execution_result xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+           <id>5b887350-be71-48b1-8026-a04a38202c6c</id>
+           <tool_ref>
+           <id>d00a4cdd-4ab6-4279-a438-809fff33c565</id>
+           <target_id>d00a4cdd-4ab6-4279-a438-809fff33c565</target_id>
+           <label>ping</label>
+           <description></description>
+           <tool_type>om_agent_command</tool_type>
+           <has_user_parameter>false</has_user_parameter>
+           <requires_run_as_user>false</requires_run_as_user>
+           <name>ping</name>
+           <ci_type>configuration_item</ci_type>
+           </tool_ref>
+           <execution_host>mambo8.mambo.net</execution_host>
+           <tool_command>ping -n 4</tool_command>
+           <user_parameters/>
+           <run_as_username>$AGENT_USER</run_as_username>
+           <tool_execution_state>failed</tool_execution_state>
+           <started>2016-05-20T13:29:58.362+02:00</started>
+           <started_text>01:29:58 PM</started_text>
+           <finished>2016-05-20T13:30:00.364+02:00</finished>
+           <finished_text>01:30:00 PM</finished_text>
+           <executed_in_context_of>
+           <entry>
+           <key>7477f30628adb33cc4e7074d6397a645</key>
+           <value>mambo8</value>
+           </entry>
+           </executed_in_context_of>
+           <output>IP address must be specified.
+           </output>
+           <result_code>1</result_code>
+           </tool_execution_result>
+           */
+          parseString(
+            result, {explicitArray: false}, function(err, response) {
+              OMiBot.logger.debug('RESULT:' + JSON.stringify(response));
+              var result = 'Your request ';
+              if (response.tool_execution_result.tool_execution_state === 'failed') {
+                result += 'failed with code ' + response.tool_execution_result.result_code + '.';
+              } else {
+                result += 'finished successfully.';
+              }
+              result += '\nResult:\n```' + response.tool_execution_result.output + '```';
+              res.send(result);
+            }
+          );
+        }
+      );
+    }
+    getConvertNodeToCiID();
+  }; // end: chatHandlerTool
+
 
   function OMiAuthenticate(callback) {
     var auth = 'Basic ' + new Buffer(OMiLogin + ':' + OMiPassword).toString('base64');
@@ -394,6 +673,7 @@ module.exports = function(OMiBot) {
   /* ------------ CHAT HANDLERS ------------ */
 
   OMiBot.respond(/omi\s+escalate\s+event\s*(\S*)/i, chatHandlerEscal);
+  OMiBot.respond(/omi\s+run(.*)$/i, chatHandlerTool);
 
   /* ------------ HTTP SERVER ROUTERS ------------ */
   OMiBot.router.post('/omibot/:channel/event', rawbody, eventHandler);
