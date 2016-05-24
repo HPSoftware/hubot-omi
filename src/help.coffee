@@ -78,7 +78,7 @@ getOMiHelpSupport = (robot,msg) ->
   if robot.adapterName is 'slack'
     msgData =
       channel: msg.message.room
-      text:'*Available OMiii Commands*'
+      text:'*Available commands*'
       attachments:supportCommandsResult
     robot.emit 'slack.attachment', msgData
   else
