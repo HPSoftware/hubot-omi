@@ -241,16 +241,21 @@ module.exports = function(OMiBot) {
 
   var chatHandlerTool = function(res) {
     var paramString = res.match[1].trim(),
-        params      = paramString.split(/\s+/);
+        params     = paramString.match(/[\w\.]+|"(?:\\"|[^"])+"/g);
 
-    if (params[0] === '' || params[0] === 'help' || params[0] === '?') {
-      res.send('super help')
+    if (params == null  || params[0] === '' || params[0] === 'help' || params[0] === '?') {
+      res.send('Get hep with \"omi help\"')
       return;
     }
 
     var nodeName = params[0].replace('http://', '').replace('https://', '');
-    var toolName = params[1];
+    var toolName = params[1].replace(/\"/g , '');
     var toolParameters = params.splice(0, 2);
+
+    console.log("toolParameters");
+    console.log(toolParameters);
+
+
     OMiBot.logger.debug('MATCH:' + JSON.stringify(res.match));
     res.send('Will execute tool on ' + nodeName);
 
