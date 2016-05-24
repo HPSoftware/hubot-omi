@@ -240,21 +240,15 @@ module.exports = function(OMiBot) {
 
 
   var chatHandlerTool = function(res) {
-    var paramString = res.match[1].trim(),
-        params     = paramString.match(/[\w\.]+|"(?:\\"|[^"])+"/g);
 
-    if (params == null  || params[0] === '' || params[0] === 'help' || params[0] === '?') {
-      res.send('Get hep with \"omi help\"')
-      return;
+    // Slack creates URL from hostname. Remove these here
+    var nodeName = res.match[1].trim().replace('http://', '').replace('https://', '');
+    var toolName = res.match[2].trim().replace(/\"/g , '');
+    var toolParameters = [];
+
+    if ( res.match.length >= 3 ) {
+      toolParameters = res.match[3].trim().split(/\s+/);
     }
-
-    var nodeName = params[0].replace('http://', '').replace('https://', '');
-    var toolName = params[1].replace(/\"/g , '');
-    var toolParameters = params.splice(0, 2);
-
-    console.log("toolParameters");
-    console.log(toolParameters);
-
 
     OMiBot.logger.debug('MATCH:' + JSON.stringify(res.match));
     res.send('Will execute tool on ' + nodeName);
@@ -270,7 +264,6 @@ module.exports = function(OMiBot) {
               getTools({ciId: testCiId});
             }
           );
-
         }
       );
     }
@@ -340,13 +333,15 @@ module.exports = function(OMiBot) {
     }
 
     function prepare(options) {
+
       var body = '<tool_preparation xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema">\ \
          <tool_id>' + options.toolId + '</tool_id>\
         <ci_ids>\
         <ci_id>' + options.ciId + '</ci_id>\
         </ci_ids>\
-        <ci_origin>ci</ci_origin>\
-      </tool_preparation>';
+        <ci_origin>ci</ci_origin></tool_preparation>';
+
+
       OMiRestCall(
         {path: '/opr-web/rest/10.11/tool_execution/preparation', method: 'POST', body: body}, function(err, result) {
           /*
@@ -375,11 +370,11 @@ module.exports = function(OMiBot) {
            */
           parseString(
             result, {explicitArray: false}, function(err, response) {
-              OMiBot.logger.debug('CONTEXT:' + JSON.stringify(response));
+              OMiBot.logger.debug('CONTEXT1:' + JSON.stringify(response));
               var executionContextId = response.tool_execution_context.id,
                   parameters         = [];
               //res.send('Tool execution has the context id: ' + executionContextId);
-              if (response.tool_execution_context.has_user_parameter) {
+              if (response.tool_execution_context.user_parameters) {
                 if (!Array.isArray(response.tool_execution_context.user_parameters)) {
                   response.tool_execution_context.user_parameters = [response.tool_execution_context.user_parameters];
                 }
@@ -394,7 +389,23 @@ module.exports = function(OMiBot) {
     }
 
     function execute(options) {
-      var body = '<tool_execution xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema"></tool_execution>';
+
+      // Squeeze in the parameters from the chat command as ${1}, ${2}, ... regardless what is define in the tool.
+      var toolParametersXML = '<has_user_parameter>false</has_user_parameter>';
+      if (toolParameters.length > 0) {
+       toolParametersXML = '<has_user_parameter>true</has_user_parameter><user_parameters>';
+       var i,l;
+       for (i = 0, l = toolParameters.length; i < l; ++i) {
+         var k = i+1;
+         toolParametersXML = toolParametersXML + '<entry><key>' + k  + '</key><value>'
+         + toolParameters[i].trim().replace('http://', '').replace('https://', '') + '</value></entry>';
+      }
+        toolParametersXML = toolParametersXML + '</user_parameters>';
+      }
+
+      var body = '<tool_execution xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema">'
+                 + toolParametersXML + '</tool_execution>';
+                 
       options.method = options.method || 'POST';
       OMiRestCall(
         {
@@ -429,7 +440,7 @@ module.exports = function(OMiBot) {
            */
           parseString(
             result, {explicitArray: false}, function(err, response) {
-              OMiBot.logger.debug('CONTEXT:' + JSON.stringify(response));
+              OMiBot.logger.debug('CONTEXT2:' + JSON.stringify(response));
               var state = response.tool_execution_context.tool_execution_result_ref.tool_execution_state;
               //res.send('Execution state: ' + state);
               switch (state) {
@@ -678,7 +689,10 @@ module.exports = function(OMiBot) {
   /* ------------ CHAT HANDLERS ------------ */
 
   OMiBot.respond(/omi\s+escalate\s+event\s*(\S*)/i, chatHandlerEscal);
-  OMiBot.respond(/omi\s+run(.*)$/i, chatHandlerTool);
+
+  OMiBot.respond(/omi\s+run\s+(\S+)\s+(".*")+(.*)$/i, chatHandlerTool);
+  OMiBot.respond(/omi\s+run\s+(\S+)\s+([a-zA-Z]+)(.*)$/i, chatHandlerTool);
+
 
   /* ------------ HTTP SERVER ROUTERS ------------ */
   OMiBot.router.post('/omibot/:channel/event', rawbody, eventHandler);
