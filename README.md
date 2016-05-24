@@ -8,6 +8,8 @@ Currently the integration cover two use cases:
 
 Note, this is an open source project. Feel free to fork, contribute or submit issues.
 
+The code is distributed om an "AS IS" basis, without warranties or conditions od any kind, either express or implied.
+
 ## Installation and setup
 
 ### Install a node, npm and generate a hubot 
@@ -16,7 +18,7 @@ Download and install node and npm on a Linux system that shall run the OMi bot. 
 
 `npm install -g generator-hubot`
 
-Generate a hubot in a directory of your choice:
+Generate a hubot in a directory of your choice. Non-root is recommended for various reasons:
 
 `mkdir hubot; cd hubot/`
 
