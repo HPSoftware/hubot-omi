@@ -1,9 +1,9 @@
 {
-   "OMiLogin": "admin" ,
-   "OMiPassword": "passwd",
-   "OMiHost":  "your.omi.server",
+   "OMiLogin": "chatops_integration_user" ,
+   "OMiPassword": "chatops_integration_passwd",
+   "OMiHost":  "my_omi_server_fqdn",
    "OMiPort":   80,
    "OMiContextRoot":  "",
    "OMiProtocol": "http",
-   "ServiceManagerName": "Service_Manager"
+   "ServiceManagerName": "Service_Manager_Connected_Server_Name_in_OMi"
 }
