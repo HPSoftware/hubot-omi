@@ -242,19 +242,23 @@ module.exports = function(OMiBot) {
 
   var chatHandlerTool = function(res) {
 
-
-    // Check if it is alloed to use run command in this room/channel
-    // if RunCmdsChannels not defined, allow all
+    // Check if it is allowed to use run command in this room/channel
+    // If RunCmdsChannels not defined, allow all
     if (undefined !== config.RunCmdsChannels && config.RunCmdsChannels.length > 0) {
+      var matchFound = false;
       for (var i = 0, l = config.RunCmdsChannels.length; i < l; i++) {
         OMiBot.logger.debug("Check restrictedChannel"+ config.RunCmdsChannels[i])
 
         if (res.message.room.match(config.RunCmdsChannels[i])) {
           OMiBot.logger.debug("Match:" +  config.RunCmdsChannels[i]);
+          matchFound = true;
           break;
         } else {
-          OMiBot.logger.debug("NO Match:" +  config.RunCmdsChannels[i])
+          OMiBot.logger.debug("NO Match:" +  config.RunCmdsChannels[i]);
+          matchFound = false;
         }
+      }
+      if ( ! matchFound ) {
         res.send('run command not allowed in this channel: ' + res.message.room);
         return;
       }
@@ -270,7 +274,7 @@ module.exports = function(OMiBot) {
     }
 
     OMiBot.logger.debug('MATCH:' + JSON.stringify(res.match));
-    res.send('Will execute tool on ' + nodeName);
+    res.send('Executing tool on ' + nodeName + ' ...');
 
     function getConvertNodeToCiID() {
       OMiRestCall(
