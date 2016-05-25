@@ -121,9 +121,9 @@ Syntax: `omi escalate event [short|long event id]`
 
 Examples:
 ```
-omi escalate event
-omi escalate event e1dc
-omi escalate event iaa1bde62-e1a4-4676-89b0-0a236fdcb6f8
+`@omi: omi escalate event
+`@omi: omi escalate event e1dc
+`@omi: omi escalate event iaa1bde62-e1a4-4676-89b0-0a236fdcb6f8
 ```
 
 **Run an OMi tool**
@@ -132,7 +132,7 @@ Syntax: `omi run [node] [tool] [parameters]`
 
 Examples:
 ```
-omi run db-srv-hr1 df 
-omi run batch-srv-hr1 ping db-srv-hr1
+`@omi: omi run db-srv-hr1 df 
+`@omi: omi run batch-srv-hr1 ping db-srv-hr1
 ```
 
