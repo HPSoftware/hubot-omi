@@ -36,6 +36,7 @@ module.exports = function(OMiBot) {
       OMiPort        = config.OMiPort,
       OMiContextRoot = config.OMiContextRoot,
       OMiProtocol    = config.OMiProtocol,
+      RunCmdsChannels = config.RunCmdsChannels,
       ServiceManagerName = config.ServiceManagerName;
 
   /* ------------ GLOBALS ------------ */
@@ -241,6 +242,24 @@ module.exports = function(OMiBot) {
 
   var chatHandlerTool = function(res) {
 
+
+    // Check if it is alloed to use run command in this room/channel
+    // if RunCmdsChannels not defined, allow all
+    if (undefined !== config.RunCmdsChannels && config.RunCmdsChannels.length > 0) {
+      for (var i = 0, l = config.RunCmdsChannels.length; i < l; i++) {
+        OMiBot.logger.debug("Check restrictedChannel"+ config.RunCmdsChannels[i])
+
+        if (res.message.room.match(config.RunCmdsChannels[i])) {
+          OMiBot.logger.debug("Match:" +  config.RunCmdsChannels[i]);
+          break;
+        } else {
+          OMiBot.logger.debug("NO Match:" +  config.RunCmdsChannels[i])
+        }
+        res.send('run command not allowed in this channel: ' + res.message.room);
+        return;
+      }
+    }
+
     // Slack creates URL from hostname. Remove these here
     var nodeName = res.match[1].trim().replace('http://', '').replace('https://', '');
     var toolName = res.match[2].trim().replace(/\"/g , '');
@@ -405,7 +424,7 @@ module.exports = function(OMiBot) {
 
       var body = '<tool_execution xmlns="http://www.hp.com/2009/software/opr/data_model" xmlns:xs="http://www.w3.org/2001/XMLSchema">'
                  + toolParametersXML + '</tool_execution>';
-                 
+
       options.method = options.method || 'POST';
       OMiRestCall(
         {
