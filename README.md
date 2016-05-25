@@ -8,7 +8,7 @@ Currently the integration cover two use cases:
 
 Note, this is an open source project. Feel free to fork, contribute or submit issues.
 
-The code is distributed om an "AS IS" basis, without warranties or conditions od any kind, either express or implied.
+The code is distributed on an "AS IS" basis, without warranties or conditions of any kind, either express or implied.
 
 ## Installation and setup
 
@@ -70,7 +70,7 @@ Setup event forwarding to your hubot. Create a new connected server in OMi:
 
 •	Integration type: Call external Event Web Service. 
 
-•	URL Pat: /omi/general (this is the bot name and channel)
+•	URL Path: /omi/general (this is the bot name and channel)
 
 •	User Name: admin 
 
