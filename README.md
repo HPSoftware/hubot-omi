@@ -54,9 +54,11 @@ Edit `omi-conf.json` in the `hubot` directory. Ensure that you use an OMi user w
    "OMiPort":   80,
    "OMiContextRoot":  "",
    "OMiProtocol": "http",
+   "RunCmdsChannels": ["^hr-infra-ops$", "^Incident[0-9]{3,5}$"],
   "ServiceManagerName": "Service_Manager_Connected_Server_Name_in_OMi"
 }
 ```
+The RunCmdsChannels is optional and you can use it to limit the channels for run command execution.
 
 ### Configure OMi 
 
