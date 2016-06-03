@@ -1,7 +1,7 @@
 # ChatOps Bot for HPE Operations Manager i (OMi)
 
-This is a project to enable OMi practitioners to connect OMi to Slack. This project contains the source code of a NPM package for a Hubot integration.
-Currently the integration covers two use cases:
+This is a project to enable OMi users to connect OMi to Slack. It contains the source code of a npm  package for a Hubot integration.
+Currently, the integration covers two use cases:
 
 1.	Automatically posting selected OMi events into Slack channels. Users can work on events via chat commands. E.g. escalating events to a trouble ticket system.
 2.	Starting custom OMi tools from the chat to investigate or correct failure situations.
@@ -26,7 +26,7 @@ Generate a hubot in a directory of your choice. HPE recommends using a non-root 
 
 ### Install and configure the OMi bot
 
-Download the `github.hpe.com/ChatOps/hubot-integrations` repo on your system. For example into /tmp/
+Download the `github.hpe.com/ChatOps/hubot-integrations` repo on your system, for example into /tmp/
 
 Within the `hubot` directory, add the OMi hubot NPM package:
 
@@ -81,9 +81,9 @@ Additionally, create an event forwarding rule of your choice.
 
 ## Start the OMi bot
 
-If not already done, add a new Hubot integration to your slack team and name it omi, save the TOKEN 
+If you haven’t already, add a new Hubot integration to your slack team and name it omi, then save the TOKEN. 
 
-Back on the hubot system. In the hubot directory,
+In the hubot directory on the hubot system, run the following commands:
 
 ```
 export HUBOT_SLACK_TOKEN=xoxb-…
@@ -93,12 +93,11 @@ HUBOT_LOG_LEVEL=debug SLACK_LOG_LEVEL=debug  bin/hubot --name omi --adapter slac
 
 ## Set up tools in OMi 
 
-Create a new tool category for ChatOps so that it is simple to give the ChatOps integration user only access to these tools.
+Create a new tool category for ChatOps so that it is simple to give the ChatOps integration user access only to these tools.
 
-Tool parameter must be named `${1} ${2}` etc. E.g. `ping -c 3 ${1}` 
+The tool parameter must be named `${1} ${2}` etc. E.g. `ping -c 3 ${1}` 
 
-Here an example for using a ping tool:
-
+Here is an example for using a ping tool:
 
 **Stefan:** `@omi: omi run putput.deu.hp.com ping devbox.deu.hp.com`
 
