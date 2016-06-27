@@ -5,5 +5,6 @@
    "OMiPort":   80,
    "OMiContextRoot":  "",
    "OMiProtocol": "http",
-   "ServiceManagerName": "Service_Manager_Connected_Server_Name_in_OMi"
+   "ServiceManagerName": "Service_Manager_Connected_Server_Name_in_OMi",
+   "rejectUnauthorized": true
 }
