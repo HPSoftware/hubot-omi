@@ -26,11 +26,11 @@ Generate a hubot in a directory of your choice. HPE recommends using a non-root 
 
 ### Install and configure the OMi bot
 
-Download the `github.hpe.com/ChatOps/hubot-integrations` repo on your system, for example into /tmp/
+Download the `github.com/HPSoftware/hubot-omi` repo on your system, for example into /tmp/
 
 Within the `hubot` directory, add the OMi hubot NPM package:
 
-`npm install /tmp/hubot-integrations/hubot-omi --save`
+`npm install /tmp/hubot-omi --save`
 
 Then add **hubot-omi** to your `external-scripts.json`:
 
