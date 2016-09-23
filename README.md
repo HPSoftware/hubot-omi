@@ -14,7 +14,7 @@ The code is distributed on an "AS IS" basis, without warranties or conditions of
 
 ### Install a node, npm and generate a hubot 
 
-Download and install node and npm on the Linux system that should run the OMi bot. Install the hubot generator:
+Download and install [node and npm version 6.x](https://nodejs.org/en/download/package-manager/) on the Linux system that should run the OMi bot. Install the hubot generator:
 
 `npm install -g generator-hubot`
 
