@@ -59,7 +59,10 @@ Edit `omi-conf.json` in the `hubot` directory. Ensure that you use an OMi user w
    "rejectUnauthorized": true
 }
 ```
+Reject Unauthorized: Reject SSL connections to OMi if certificate cannot get authorized.
+
 The RunCmdsChannels is optional and you can use it to limit the channels for the run command execution.
+
 
 ### Configure OMi 
 
@@ -76,8 +79,6 @@ Setup event forwarding to your hubot. Create a new External Event Processing con
 •	User Name: admin 
 
 •	Port: 8080 – the hubot port is set in an environment variable before starting the bot
-
-•	Reject Unauthorized: Reject SSL connections to OMi if certificate cannot get authorized
 
 Additionally, create an event forwarding rule of your choice.
 
