@@ -25,6 +25,7 @@ module.exports = function(OMiBot) {
       Https        = require('https'),
       _            = require('lodash'),
       cookieParser = require('cookie').parse,
+      fs           = require('fs'),
       config       = require('config.json')('./omi-conf.json');
 
 
@@ -35,13 +36,16 @@ module.exports = function(OMiBot) {
       OMiPort            = config.OMiPort,
       OMiContextRoot     = config.OMiContextRoot,
       OMiProtocol        = config.OMiProtocol,
-      ServiceManagerName = config.ServiceManagerName;
+      ServiceManagerName = config.ServiceManagerName,
+      rejectUnauthorized = config.rejectUnauthorized;
+
 
   /* ------------ GLOBALS ------------ */
   var omiCookies        = '',
       secureModifyToken = '',
       http              = Http,
       eventIDs          = [],  // cache for event IDs
+      cacert            = null,
       maxIDs            = 100;
 
 
@@ -508,20 +512,32 @@ module.exports = function(OMiBot) {
 
 
   function OMiAuthenticate(callback) {
+
+    if (OMiLogin == null || OMiLogin == '') {
+      OMiBot.logger.info('No OMiLogn: Skipping OMiAuthenticate ...');
+      return;
+    }
+
     var auth = 'Basic ' + new Buffer(OMiLogin + ':' + OMiPassword).toString('base64');
 
     var options = {
           host: OMiHost,
           port: OMiPort,
-          rejectUnauthorized: config.rejectUnauthorized,
+          rejectUnauthorized: rejectUnauthorized,
           path: OMiContextRoot + '/opr-web/rest',
           method: 'GET',
           headers: {
             Authorization: auth
           }
-        },
+        };
 
-        request = http.request(
+
+    if ( cacert !== null )
+    {
+         options.ca = cacert;
+    }
+
+    var request = http.request(
           options, function(res) {
             if (res.statusCode !== 200) {
               res.on(
@@ -575,13 +591,19 @@ module.exports = function(OMiBot) {
       host: OMiHost,
       port: OMiPort,
       path: OMiContextRoot + options.path,
-      rejectUnauthorized: config.rejectUnauthorized,
+      rejectUnauthorized: rejectUnauthorized,
       method: options.method,
       headers: {
         Cookie: omiCookies,
         'X-Secure-Modify-Token': secureModifyToken
       }
     };
+    
+    if ( cacert !== null )
+    {
+         requestOptions.ca = cacert;
+    }
+
     if (options.body && options.method !== 'GET') {
       requestOptions.headers['Content-Type'] = 'text/xml';
       requestOptions.headers['Content-Length'] = Buffer.byteLength(options.body);
@@ -659,6 +681,15 @@ module.exports = function(OMiBot) {
   if (OMiProtocol === 'https') {
     http = Https;
   }
+
+  
+  if ( rejectUnauthorized && OMiProtocol === 'https' ) {
+     try {
+        cacert = fs.readFileSync('ca-cert.pem');
+     } catch (err) {
+        OMiBot.logger.info('Could not read certificate ca-cert.pem');
+     }
+  } 
 
   /* ------------ CHAT HANDLERS ------------ */
 
