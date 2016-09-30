@@ -513,7 +513,7 @@ module.exports = function(OMiBot) {
     var options = {
           host: OMiHost,
           port: OMiPort,
-          rejectUnauthorized: config.rejectUnauthorized || true,
+          rejectUnauthorized: config.rejectUnauthorized,
           path: OMiContextRoot + '/opr-web/rest',
           method: 'GET',
           headers: {
@@ -575,7 +575,7 @@ module.exports = function(OMiBot) {
       host: OMiHost,
       port: OMiPort,
       path: OMiContextRoot + options.path,
-      rejectUnauthorized: config.rejectUnauthorized || true,
+      rejectUnauthorized: config.rejectUnauthorized,
       method: options.method,
       headers: {
         Cookie: omiCookies,
