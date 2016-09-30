@@ -79,7 +79,11 @@ Edit `omi-conf.json` in the `hubot` directory. Ensure that you use an OMi user w
 
 Event forwarding only mode: Leave `OMiLogin` empty (`"OMiLogin": ""`), in case you do not want to the bot to perform any operations in OMi. 
 
-Reject Unauthorized: Reject SSL connections to OMi if certificate cannot get authorized.
+Reject Unauthorized: Reject SSL connections to OMi if the certificate cannot get authorized. 
+
+For proper https configuration, export the OMi Webserver CA Certificate and copy it to the `hubot` directory:
+
+`/opt/HP/BSM/bin/opr-cert-mgmt.sh -export "OMi Webserver CA Certificate" PEM ca-cert.pem`
 
 The RunCmdsChannels is optional and you can use it to limit the channels for the run command execution.
 
