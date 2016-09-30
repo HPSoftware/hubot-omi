@@ -22,7 +22,24 @@ Generate a hubot in a directory of your choice. HPE recommends using a non-root 
 
 `mkdir hubot; cd hubot/`
 
-`yo hubot --owner="you@all.org" --name="omi" --description="OMi bot" --adapter="slack"`
+`yo hubot --owner="you@all.org" --name="omi" --description="OMi bot" --defaults`
+
+Do not use --adapter. Add the required slack adaptper manually in a next steps.
+
+Add **hubot-slack** the the dependencies in `package.json`:
+
+```json
+
+    ...  ,
+    "hubot-slack": "git+https://github.com/keke/hubot-slack.git"
+  }, ...
+
+```
+
+Install dependencies:
+
+`npm install`
+
 
 ### Install and configure the OMi bot
 
@@ -59,6 +76,9 @@ Edit `omi-conf.json` in the `hubot` directory. Ensure that you use an OMi user w
    "rejectUnauthorized": true
 }
 ```
+
+Event forwarding only mode: Leave `OMiLogin` empty (`"OMiLogin": ""`), in case you do not want to the bot to perform any operations in OMi. 
+
 Reject Unauthorized: Reject SSL connections to OMi if certificate cannot get authorized.
 
 The RunCmdsChannels is optional and you can use it to limit the channels for the run command execution.
