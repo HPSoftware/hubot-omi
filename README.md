@@ -43,11 +43,11 @@ Install dependencies:
 
 ### Install and configure the OMi bot
 
-Download the `github.com/HPSoftware/hubot-omi` repo on your system, for example into /tmp/
+Download the `github.com/HPSoftware/hubot-omi` repo on your system, for example into /home/hubot/
 
 Within the `hubot` directory, add the OMi hubot NPM package:
 
-`npm install /tmp/hubot-omi --save`
+`npm install /home/hubot/hubot-omi --save`
 
 Then add **hubot-omi** to your `external-scripts.json`:
 
