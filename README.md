@@ -98,7 +98,7 @@ Setup event forwarding to your hubot. Create a new External Event Processing con
 
 •	Integration type: Call external event web service. 
 
-•	URL Path: /omi/general (this is the bot name and channel)
+•	URL Path: /omibot/general ('general' is the target channel name)
 
 •	User Name: admin 
 
