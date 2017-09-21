@@ -1,5 +1,7 @@
 # ChatOps Bot for HPE Operations Manager i (OMi)
 
+**This repo exists for historical purposes. A more up-to-date ChatBot can be found on the ITOM Marketplace. [ITOM Marketplace](https://marketplace.microfocus.com/itom/content/operations-bridge-bot)**
+
 This is a project to enable OMi users to connect OMi to Slack. It contains the source code of a npm  package for a Hubot integration.
 Currently, the integration covers two use cases:
 
